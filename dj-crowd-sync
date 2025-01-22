@@ -1,0 +1,235 @@
+import React, { useState, useEffect } from 'react';
+import { Music, Users, Trophy, Activity, ChevronUp, ChevronDown, X, Sun, Moon, Cloud, Zap, MessageCircle, Gift } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+// Previous genre and time slot configurations remain the same
+const GENRES = {
+  house: { name: 'House', energyDecay: 0.2, energyBoost: 15, color: 'from-purple-500 to-pink-500' },
+  hiphop: { name: 'Hip-Hop', energyDecay: 0.5, energyBoost: 20, color: 'from-yellow-500 to-red-500' },
+  rock: { name: 'Rock', energyDecay: 0.8, energyBoost: 25, color: 'from-red-500 to-orange-500' },
+  electronic: { name: 'Electronic', energyDecay: 0.3, energyBoost: 18, color: 'from-blue-500 to-cyan-500' }
+};
+
+const TIME_SLOTS = [
+  { time: '12:00', name: 'Opening Act', crowdMultiplier: 0.6 },
+  { time: '15:00', name: 'Afternoon Set', crowdMultiplier: 0.8 },
+  { time: '18:00', name: 'Sunset Session', crowdMultiplier: 1.0 },
+  { time: '21:00', name: 'Headliner', crowdMultiplier: 1.2 },
+  { time: '23:00', name: 'Late Night', crowdMultiplier: 0.9 }
+];
+
+// Sample rewards data
+const REWARDS = [
+  { id: 1, name: 'Early Bird DJ', description: 'First 100 participants', points: 500 },
+  { id: 2, name: 'Energy Master', description: 'Maintain 90%+ energy for 5 minutes', points: 1000 },
+  { id: 3, name: 'Crowd Favorite', description: 'Reach 10,000 score', points: 2000 },
+];
+
+// Sample participant data
+const PARTICIPANTS = [
+  { id: 1, name: 'DJ Alex', score: 8500, rewards: [1, 2] },
+  { id: 2, name: 'DJ Sarah', score: 12000, rewards: [1, 2, 3] },
+  { id: 3, name: 'DJ Mike', score: 6000, rewards: [1] },
+];
+
+const MessagingSystem = ({ currentUser, onClose }) => {
+  const [messages, setMessages] = useState([
+    { id: 1, from: 'DJ Sarah', to: 'DJ Alex', text: 'Great set! Love the energy!' },
+    { id: 2, from: 'DJ Mike', to: 'DJ Alex', text: 'What genre are you playing next?' }
+  ]);
+  const [newMessage, setNewMessage] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-gray-800 rounded-lg w-full max-w-2xl p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-white">DJ Chat</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 h-96">
+          {/* Participants List */}
+          <div className="bg-gray-700 rounded-lg p-4 overflow-y-auto">
+            <h3 className="text-white font-bold mb-2">Participants</h3>
+            {PARTICIPANTS.map(participant => (
+              <button
+                key={participant.id}
+                onClick={() => setSelectedUser(participant)}
+                className={`w-full text-left p-2 rounded mb-2 ${
+                  selectedUser?.id === participant.id 
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-600 text-white hover:bg-gray-500'
+                }`}
+              >
+                {participant.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Messages */}
+          <div className="col-span-2 bg-gray-700 rounded-lg p-4 flex flex-col">
+            <div className="flex-1 overflow-y-auto mb-4 space-y-2">
+              {messages.map(message => (
+                <div
+                  key={message.id}
+                  className={`p-2 rounded-lg ${
+                    message.from === currentUser
+                      ? 'bg-blue-600 ml-auto'
+                      : 'bg-gray-600'
+                  } max-w-[80%]`}
+                >
+                  <div className="text-sm text-gray-300">{message.from}</div>
+                  <div className="text-white">{message.text}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Message Input */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1 bg-gray-600 text-white rounded-lg px-4 py-2"
+              />
+              <button 
+                onClick={() => {
+                  if (newMessage.trim() && selectedUser) {
+                    setMessages(prev => [...prev, {
+                      id: prev.length + 1,
+                      from: currentUser,
+                      to: selectedUser.name,
+                      text: newMessage
+                    }]);
+                    setNewMessage('');
+                  }
+                }}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RewardsModal = ({ onClose, currentUser }) => {
+  const userRewards = PARTICIPANTS.find(p => p.name === currentUser)?.rewards || [];
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-gray-800 rounded-lg max-w-lg w-full p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-white">Your Rewards</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {REWARDS.map(reward => (
+            <div
+              key={reward.id}
+              className={`p-4 rounded-lg ${
+                userRewards.includes(reward.id)
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600'
+                  : 'bg-gray-700'
+              }`}
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-bold text-white">{reward.name}</h3>
+                  <p className="text-gray-300">{reward.description}</p>
+                </div>
+                <div className="text-yellow-400 font-bold">{reward.points} pts</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Previous component implementations remain the same
+const WelcomeModal = ({ onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-lg w-full p-6">
+        {/* Previous welcome modal content */}
+      </div>
+    </div>
+  );
+};
+
+const DJApp = () => {
+  // Previous state declarations
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [currentGenre, setCurrentGenre] = useState('house');
+  const [crowdEnergy, setCrowdEnergy] = useState(75);
+  const [score, setScore] = useState(0);
+  const [danceCrews, setDanceCrews] = useState(3);
+  const [battleMode, setBattleMode] = useState({ active: false, player1: 0, player2: 0, activeZone: 'Center' });
+  const [currentSlot, setCurrentSlot] = useState(TIME_SLOTS[0]);
+  const [weather, setWeather] = useState('sunny');
+
+  // New state for messaging and rewards
+  const [showMessaging, setShowMessaging] = useState(false);
+  const [showRewards, setShowRewards] = useState(false);
+  const [currentUser] = useState('DJ Alex'); // In a real app, this would come from authentication
+
+  // Previous useEffect and handler implementations
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white p-4">
+      {showWelcome && <WelcomeModal onClose={() => setShowWelcome(false)} />}
+      {showMessaging && (
+        <MessagingSystem 
+          currentUser={currentUser} 
+          onClose={() => setShowMessaging(false)} 
+        />
+      )}
+      {showRewards && (
+        <RewardsModal
+          currentUser={currentUser}
+          onClose={() => setShowRewards(false)}
+        />
+      )}
+      
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+            DJ Crowd Sync
+          </h1>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowMessaging(true)}
+              className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg"
+            >
+              <MessageCircle className="text-blue-400" />
+            </button>
+            <button
+              onClick={() => setShowRewards(true)}
+              className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg"
+            >
+              <Gift className="text-purple-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* Previous UI components remain the same */}
+        {/* ... */}
+      </div>
+    </div>
+  );
+};
+
+export default DJApp;
